@@ -5,23 +5,45 @@ metadata:
   name: cli-manager 
   labels:
     app: cli-manager
+    service: clustercli-fileserver
   annotations:
     config.openshift.io/inject-proxy: operator
     exclude.release.openshift.io/internal-openshift-hosted: "true"
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: cli-manager
+      service: clustercli-fileserver
   template:
     metadata:
       name: cli-manager
       labels:
         app: cli-manager
+        service: clustercli-fileserver
     spec:
       serviceAccountName: cli-manager
+      initContainers:
+      - name: oc-artifacts
+        image: quay.io/sallyom/oc-artifacts:latest 
+        command: ['sh', '-c', 'cp -R /usr/share/openshift/* /var/run/oc-artifacts/']
+        volumeMounts:
+        - mountPath: /var/run/oc-artifacts
+          name: oc-artifacts
+      - name: kn-artifacts
+        image: quay.io/sallyom/kn:latest
+        command: ['sh', '-c', 'cp -R /tmp/* /var/run/kn-artifacts/']
+        volumeMounts:
+        - mountPath: /var/run/kn-artifacts
+          name: kn-artifacts
+      - name: odo-artifacts
+        image: quay.io/sallyom/odo:latest
+        command: ['sh', '-c', 'cp -R /tmp/* /var/run/odo-artifacts/']
+        volumeMounts:
+        - mountPath: /var/run/odo-artifacts
+          name: odo-artifacts
       containers:
-      - name: test
+      - name: climanager
         image: quay.io/sallyom/clustercli:latest
         imagePullPolicy: Always
         command: ["cli-manager"]
@@ -42,6 +64,39 @@ spec:
         - mountPath: /var/run/configmaps/service-ca-bundle
           name: service-ca-bundle
           readOnly: true
+      - name: clustercli-fileserver
+        imagePullPolicy: IfNotPresent
+        command: ["/usr/sbin/nginx", "-g", "daemon off;"]
+        image: nginx:1.16
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        - containerPort: 8443
+          protocol: TCP
+        resources:
+          requests:
+            memory: 50Mi
+            cpu: 10m
+        volumeMounts:
+        - mountPath: /var/run/configmaps/config
+          name: config
+        - mountPath: /var/run/secrets/serving-cert
+          name: serving-cert
+        - mountPath: /var/run/configmaps/trusted-ca-bundle
+          name: trusted-ca-bundle
+          readOnly: true
+        - mountPath: /var/run/configmaps/service-ca-bundle
+          name: service-ca-bundle
+          readOnly: true
+        - mountPath: /usr/share/nginx/html/oc
+          name: oc-artifacts
+        - mountPath: /usr/share/nginx/html/kn
+          name: kn-artifacts
+        - mountPath: /usr/share/nginx/html/odo
+          name: odo-artifacts
+        - mountPath: /usr/share/nginx/html
+          name: shared-files
         env:
         - name: IMAGE
           value: quay.io/sallyom/clustercli:test
@@ -51,6 +106,14 @@ spec:
               fieldPath: metadata.name
         terminationMessagePolicy: FallbackToLogsOnError
       volumes:
+      - name: shared-files
+        emptyDir: {}
+      - name: oc-artifacts
+        emptyDir: {}
+      - name: kn-artifacts
+        emptyDir: {}
+      - name: odo-artifacts
+        emptyDir: {}
       - name: config
         configMap:
           defaultMode: 440

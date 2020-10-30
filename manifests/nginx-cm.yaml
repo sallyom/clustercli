@@ -1,0 +1,8 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: nginx-configmap
+  namespace: openshift-cli-manager
+data:
+  nginx.conf: "# Load modular configuration files from the /etc/nginx/conf.d directory.\n# See http://nginx.org/en/docs/ngx_core_module.html#include\n# for more information.\ninclude /etc/nginx/conf.d/*.conf;\n\nserver {\n    listen       8080 default_server;\n    server_name  _;\n    root         /usr/share/nginx/html;\n\n    real_ip_header X-Forwarded-For;\n    set_real_ip_from 10.0.0.0/8;\n\n    # Load configuration files for the default server block.\n    include /etc/nginx/default.d/*.conf;\n\n    location / {\n        try_files $uri $uri/ @rewrite;\n        etag off;\n        if_modified_since off;\t\n        expires 1y;\n    }\n\n    location @rewrite {\n        return 307 $scheme://$http_host;\n    }\n\n    gzip            on;\n    gzip_min_length 1000;\n    gzip_comp_level 9;\n    gzip_proxied    expired no-cache no-store private auth;\n    gzip_types      text/plain text/css application/javascript application/xml;\n}\n"
+
