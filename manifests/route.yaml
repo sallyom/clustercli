@@ -1,0 +1,14 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  labels:
+    service: clustercli-fileserver
+  name: clustercli-fileserver
+  namespace: openshift-cli-manager
+spec:
+  port:
+    targetPort: http
+  to:
+    kind: Service
+    name: clustercli-fileserver
+  wildcardPolicy: None

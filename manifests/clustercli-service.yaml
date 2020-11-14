@@ -5,6 +5,7 @@ metadata:
   labels:
     service: clustercli-fileserver
   name: clustercli-fileserver
+  namespace: openshift-cli-manager
 spec:
   ports:
     - name: http

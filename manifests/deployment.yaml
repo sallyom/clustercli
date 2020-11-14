@@ -25,7 +25,7 @@ spec:
       serviceAccountName: cli-manager
       initContainers:
       - name: oc-artifacts
-        image: quay.io/sallyom/oc-artifacts:latest 
+        image: quay.io/openshift/origin-cli-artifacts:latest
         command: ['sh', '-c', 'cp -R /usr/share/openshift/* /var/run/oc-artifacts/']
         volumeMounts:
         - mountPath: /var/run/oc-artifacts
@@ -96,18 +96,16 @@ spec:
         - mountPath: /usr/share/nginx/html/odo
           name: odo-artifacts
         - mountPath: /usr/share/nginx/html
-          name: shared-files
+          name: index
         env:
         - name: IMAGE
-          value: quay.io/sallyom/clustercli:test
+          value: quay.io/sallyom/clustercli:new
         - name: POD_NAME
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
         terminationMessagePolicy: FallbackToLogsOnError
       volumes:
-      - name: shared-files
-        emptyDir: {}
       - name: oc-artifacts
         emptyDir: {}
       - name: kn-artifacts
@@ -118,6 +116,10 @@ spec:
         configMap:
           defaultMode: 440
           name: cli-manager-config
+      - name: index
+        configMap:
+          name: index-html-config
+          optional: true
       - name: trusted-ca-bundle
         configMap:
           name: trusted-ca-bundle
